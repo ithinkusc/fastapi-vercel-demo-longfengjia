@@ -207,7 +207,7 @@ HTML = """
       <div class="card">
         <div class="card-title">Try it — POST /api/echo</div>
         <div class="input-row">
-          <input type="text" id="msg" placeholder="Type a message…" value="Hello from Vercel!" />
+          <input type="text" id="msg" placeholder="Type a message…" value="Hello from FastAPI Demo on Vercel!"/>
           <button id="sendBtn" onclick="tryEcho()">Send</button>
         </div>
         <div class="result-box" id="result"></div>
