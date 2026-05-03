@@ -25,6 +25,15 @@ class EchoResponse(BaseModel):
     length: int
     timestamp: str
 
+class RandomNumberRequest(BaseModel):
+    max_value: int
+
+class RandomNumberResponse(BaseModel):
+    number: int
+    min_value: int
+    max_value: int
+    timestamp: str
+
 # ── HTML landing page ────────────────────────────────────────────────────────
 
 HTML = """
@@ -197,6 +206,11 @@ HTML = """
           <span class="ep-desc">Echo + transform</span>
         </div>
         <div class="ep">
+          <span class="method post">POST</span>
+          <span class="ep-path">/api/random-number</span>
+          <span class="ep-desc">Random 0 to N</span>
+        </div>
+        <div class="ep">
           <span class="method get">GET</span>
           <span class="ep-path">/api/docs</span>
           <span class="ep-desc">Swagger UI</span>
@@ -211,6 +225,17 @@ HTML = """
           <button id="sendBtn" onclick="tryEcho()">Send</button>
         </div>
         <div class="result-box" id="result"></div>
+      </div>
+
+      <!-- try random number -->
+      <div class="card">
+        <div class="card-title">Try it — POST /api/random-number</div>
+        <div class="card-desc" style="color:var(--muted); font-size:12px; margin-bottom:12px;">Generate a random number between 0 and any upper bound you choose.</div>
+        <div class="input-row">
+          <input type="text" id="maxN" placeholder="Max value (e.g. 100)" value="100"/>
+          <button id="rnBtn" onclick="tryRandomNumber()">Generate</button>
+        </div>
+        <div class="result-box" id="rnResult"></div>
       </div>
 
       <!-- stats -->
@@ -256,6 +281,29 @@ HTML = """
       } finally { btn.disabled = false; }
     }
 
+    async function tryRandomNumber() {
+      const btn = document.getElementById('rnBtn');
+      const box = document.getElementById('rnResult');
+      const maxN = parseInt(document.getElementById('maxN').value.trim(), 10);
+      if (isNaN(maxN) || maxN < 0) return;
+      btn.disabled = true;
+      box.className = 'result-box visible';
+      box.textContent = 'Generating…';
+      try {
+        const res = await fetch('/random-number', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ max_value: maxN })
+        });
+        const data = await res.json();
+        box.classList.remove('error');
+        box.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        box.classList.add('error');
+        box.textContent = 'Error: ' + e.message;
+      } finally { btn.disabled = false; }
+    }
+
     async function loadHealth() {
       try {
         const res = await fetch('/health');
@@ -267,6 +315,10 @@ HTML = """
 
     document.getElementById('msg').addEventListener('keydown', e => {
       if (e.key === 'Enter') tryEcho();
+    });
+
+    document.getElementById('maxN').addEventListener('keydown', e => {
+      if (e.key === 'Enter') tryRandomNumber();
     });
 
     loadHealth();
@@ -312,5 +364,14 @@ async def echo(body: EchoRequest):
         message=body.message,
         reversed=body.message[::-1],
         length=len(body.message),
+        timestamp=datetime.utcnow().isoformat() + "Z",
+    )
+
+@app.post("/random-number", response_model=RandomNumberResponse)
+async def random_number(body: RandomNumberRequest):
+    return RandomNumberResponse(
+        number=random.randint(0, body.max_value),
+        min_value=0,
+        max_value=body.max_value,
         timestamp=datetime.utcnow().isoformat() + "Z",
     )
